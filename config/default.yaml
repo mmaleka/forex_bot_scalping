@@ -5,7 +5,14 @@ mode: live            # paper | live   (paper = the Exness trial account)
 
 # Pairs traded concurrently (one position allowed per pair). Edit this list to
 # change the book — the engine, risk manager, and tick stream all follow it.
+# 40-pair book (expanded 20 → 40 on 2026-09-25). Every quote currency is
+# covered by a USD-quoted pair in the book (USDJPY, USDCAD, …, USDCZKm,
+# USDDKKm, USDSEKm), so the risk manager's fx table sizes ALL crosses
+# correctly — no parity fallbacks. USDCZKm/USDDKKm replace the old
+# USDSKSm/USDDKAm names (the broker lists them under the ISO codes — the
+# old names are NOT valid symbols on this account).
 symbols:
+  # USD majors
   - EURUSDm
   - GBPUSDm
   - USDJPYm
@@ -13,19 +20,48 @@ symbols:
   - NZDUSDm
   - USDCADm
   - USDCHFm
+  # EUR crosses
   - EURGBPm
   - EURAUDm
   - EURNZDm
   - EURCHFm
+  - EURJPYm
+  - EURCADm
+  # GBP crosses
   - GBPJPYm
   - GBPAUDm
   - GBPCHFm
-  - CADJPYm
+  - GBPNZDm
+  - GBPCADm
+  # AUD crosses
   - AUDJPYm
+  - AUDCADm
+  - AUDCHFm
+  - AUDNZDm
+  # NZD crosses
   - NZDJPYm
+  - NZDCADm
+  - NZDCHFm
+  # CAD / CHF crosses
+  - CADJPYm
+  - CADCHFm
+  - CHFJPYm
+  # NOK crosses
   - USDNOKm
-  - USDSKSm
-  - USDDKAm
+  - EURNOKm
+  - GBPNOKm
+  - AUDNOKm
+  - NZDNOKm
+  # CZK crosses
+  - USDCZKm
+  - EURCZKm
+  - GBPCZKm
+  # DKK crosses
+  - USDDKKm
+  - EURDKKm
+  - AUDDKKm
+  # SEK
+  - USDSEKm
 timeframe: H1          # H1 — moved up from M15 on 2026-09-24 after the all-symbols H1 backtest
                        # (scripts/backtest_all_h1.py). Strategy lookbacks unchanged (MA 20/50,
                        # Donchian 20, RSI 14, BB 20, CHoCH 2, ATR 14 — bar units).
@@ -33,8 +69,11 @@ timeframe: H1          # H1 — moved up from M15 on 2026-09-24 after the all-sy
 strategy:
   name: ensemble       # which strategy in forexbot/strategy/ (ensemble = weighted vote of members)
   params:
-    min_votes: 2       # weight units required to open (2 of 4 members below)
-    min_close_votes: 2 # weight units required to close
+    min_votes: 1       # one member firing opens the trade (was 2 — measured on
+                       # H1 2026-09-25: ~7x more trades, better returns, win rate
+                       # ~87→~76%, maxDD ~2x; scripts/sweep_minvotes_h1.py)
+    min_close_votes: 1 # inert with min_votes=1 (a single opposing vote reverses),
+                       # set for consistency
     members:
       # Trend family
       - name: ma_cross

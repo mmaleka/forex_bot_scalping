@@ -32,10 +32,12 @@ from forexbot.utils import parse_pair
 HOURS_SECS = 3600
 
 
-# Exness 6-letter symbols that don't map 1:1 onto Yahoo tickers:
+# Exness symbols that don't map 1:1 onto Yahoo tickers (the 2026-09-25 rename
+# USDSKSm→USDCZKm / USDDKAm→USDDKKm already lands on the right Yahoo tickers
+# via the default pair+`=X` rule; kept explicit so the mapping is documented):
 _YF_OVERRIDES = {
-    "USDDKAm": "USDDKK=X",  # Exness truncates DKK → "USDDKA"; Yahoo spells it USDDKK
-    "USDSKSm": "USDCZK=X",  # SKS = old ISO code for the Czech koruna; Yahoo uses CZK
+    "USDDKKm": "USDDKK=X",  # Exness lists DKK as USDDKK; Yahoo agrees
+    "USDCZKm": "USDCZK=X",  # SKS was the old ISO code for the Czech koruna; Yahoo uses CZK
 }
 
 
