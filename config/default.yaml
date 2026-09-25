@@ -1,0 +1,96 @@
+# ── Non-secret, tunable configuration (committed) ──────────────────────────
+# Secrets (API key, broker creds) live ONLY in `.env`, never here.
+
+mode: live            # paper | live   (paper = the Exness trial account)
+
+# Pairs traded concurrently (one position allowed per pair). Edit this list to
+# change the book — the engine, risk manager, and tick stream all follow it.
+symbols:
+  - EURUSDm
+  - GBPUSDm
+  - USDJPYm
+  - AUDUSDm
+  - NZDUSDm
+  - USDCADm
+  - USDCHFm
+  - EURGBPm
+  - EURAUDm
+  - EURNZDm
+  - EURCHFm
+  - GBPJPYm
+  - GBPAUDm
+  - GBPCHFm
+  - CADJPYm
+  - AUDJPYm
+  - NZDJPYm
+  - USDNOKm
+  - USDSKSm
+  - USDDKAm
+timeframe: H1          # H1 — moved up from M15 on 2026-09-24 after the all-symbols H1 backtest
+                       # (scripts/backtest_all_h1.py). Strategy lookbacks unchanged (MA 20/50,
+                       # Donchian 20, RSI 14, BB 20, CHoCH 2, ATR 14 — bar units).
+
+strategy:
+  name: ensemble       # which strategy in forexbot/strategy/ (ensemble = weighted vote of members)
+  params:
+    min_votes: 2       # weight units required to open (2 of 4 members below)
+    min_close_votes: 2 # weight units required to close
+    members:
+      # Trend family
+      - name: ma_cross
+        params: {fast: 20, slow: 50}
+        weight: 1.0
+      - name: donchian_breakout
+        params: {lookback: 20}
+        weight: 1.0
+      # Mean-reversion family (deliberately decorrelated vs the trend side)
+      - name: rsi_reversion
+        params: {period: 14, oversold: 30, overbought: 70}
+        weight: 1.0
+      - name: bollinger_reversion
+        params: {period: 20, num_std: 2.0}
+        weight: 1.0
+      # CHoCH — structural reversal member (an ordinary voter, not a swing
+      # vote): only fires when the close breaks a CONFIRMED swing after
+      # opposing structure (lower high / higher low). Rare, event-based —
+      # like the other members, silent most bars.
+      - name: choch_strategy
+        params:
+          pivot_k: 2           # bars on each side needed to confirm a swing
+        weight: 1.0
+
+broker:
+  name: tickerall      # tickerall | paper
+  broker: mt5          # Tickerall broker type (exness via mt5)
+  keep_alive: true     # keep the trial session hot between bars
+
+risk:
+  sizing_mode: risk            # risk = size so entry→SL risks risk_per_trade_pct of equity
+                               # fixed = fixed_lot_size / fixed_lot_size_jpy below (old behavior)
+  fixed_lot_size: 0.1          # fixed position size (lots) — non-JPY pairs ("fixed" mode)
+  fixed_lot_size_jpy: 0.01     # fixed position size (lots) — JPY pairs ("fixed" mode)
+  risk_per_trade_pct: 0.5      # % of equity risked between entry and stop ("risk" mode)
+  floor_to_min_lot: true       # size below the broker min → fill at the min lot instead of
+                               # skipping (small accounts; risks a bit MORE than target % on
+                               # those bars). false = strict "never exceed the risk budget"
+  stop_loss_atr_mult: 2.0      # SL distance = mult × ATR
+  take_profit_atr_mult: 0.0    # 0 = no fixed TP (SL / manual only)
+  max_concurrent_positions: 10 # account-wide cap on open positions
+  max_positions_per_symbol: 1  # at most one position per pair
+  max_daily_loss_pct: 10.0      # stop trading for the day beyond this
+  max_exposure_pct: 10.0       # cap on total open margin exposure
+  atr_period: 14
+
+trailing:                      # trailing take-profit — the stop follows price in your favor
+  enabled: true
+  activation_points: 30        # start trailing once 20 pts (2 pips) in profit
+  trail_points: 20             # keep the stop 15 pts (1.5 pips) behind the best price
+  step_points: 5               # only re-place the stop when it improves by ≥ 5 pts
+
+engine:
+  stream: true             # use the Tickerall WS tick stream if available
+  poll_interval_s: 1.0     # fallback bar-close poll cadence
+
+logging:
+  level: INFO
+  file: data/bot.log

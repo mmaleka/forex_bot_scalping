@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(taskkill *)",
+      "PowerShell(Get-Process *)"
+    ]
+  }
+}

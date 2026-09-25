@@ -1,0 +1,22 @@
+# secrets — NEVER commit real keys/credentials
+.env
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# data / runtime state
+data/
+*.sqlite3
+*.db
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/

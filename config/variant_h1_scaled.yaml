@@ -1,0 +1,62 @@
+# EXPERIMENT VARIANT: H1 with lookbacks scaled ÷4 vs default.yaml so they cover
+# the SAME time horizon as the M15 config (an H1 bar = 4× an M15 bar in time).
+#   MA 20/50 → 5/13 · Donchian 20 → 5 · RSI 14 → 4 · BB 20 → 5 · CHoCH pivot 2 → 1
+#   ATR 14 → 4. Trailing left unchanged (30/20/5 pts = price units, not time).
+# Do not use live.
+mode: paper
+symbols:
+  - EURUSDm
+timeframe: H1
+
+strategy:
+  name: ensemble
+  params:
+    min_votes: 2
+    min_close_votes: 2
+    members:
+      - name: ma_cross
+        params: {fast: 5, slow: 13}
+        weight: 1.0
+      - name: donchian_breakout
+        params: {lookback: 5}
+        weight: 1.0
+      - name: rsi_reversion
+        params: {period: 4, oversold: 30, overbought: 70}
+        weight: 1.0
+      - name: bollinger_reversion
+        params: {period: 5, num_std: 2.0}
+        weight: 1.0
+      - name: choch_strategy
+        params: {pivot_k: 1, atr_period: 4}
+        weight: 1.0
+
+broker:
+  name: paper
+
+risk:
+  sizing_mode: risk
+  fixed_lot_size: 0.1
+  fixed_lot_size_jpy: 0.01
+  risk_per_trade_pct: 0.5
+  floor_to_min_lot: true
+  stop_loss_atr_mult: 2.0
+  take_profit_atr_mult: 0.0
+  max_concurrent_positions: 10
+  max_positions_per_symbol: 1
+  max_daily_loss_pct: 10.0
+  max_exposure_pct: 10.0
+  atr_period: 4
+
+trailing:
+  enabled: true
+  activation_points: 30
+  trail_points: 20
+  step_points: 5
+
+engine:
+  stream: false
+  poll_interval_s: 1.0
+
+logging:
+  level: INFO
+  file: data/bot.log
